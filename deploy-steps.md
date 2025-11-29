@@ -1,6 +1,9 @@
 Here's the formatted text for a GitHub README file:
 
 ---
+# youtube vide0
+Code With Clinton
+https://www.youtube.com/watch?v=tqRo922F9ao
 
 # Deploying a Django Project to an AWS EC2 Instance
 
