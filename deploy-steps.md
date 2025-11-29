@@ -173,6 +173,11 @@ Enable the Nginx configuration:
 ```bash
 sudo ln -s /etc/nginx/sites-available/yourproject /etc/nginx/sites-enabled
 sudo nginx -t
+
+# allow permission
+#------------------------------
+chmod o+rx /home/ubuntu
+#------------------------------
 sudo systemctl restart nginx
 ```
 
