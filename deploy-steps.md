@@ -133,6 +133,8 @@ Reload systemd to apply the changes:
 sudo systemctl daemon-reload
 sudo systemctl start gunicorn
 sudo systemctl enable gunicorn
+sudo systemctl status gunicorn
+ls -l /home/ubuntu/django_cocker/gunicorn.sock
 ```
 
 ### Install and Configure Nginx:
@@ -175,11 +177,17 @@ sudo ln -s /etc/nginx/sites-available/yourproject /etc/nginx/sites-enabled
 sudo nginx -t
 
 # allow permission
+sudo systemctl restart nginx
+sudo systemctl status nginx
+```
 #------------------------------
 chmod o+rx /home/ubuntu
+ chmod -R 755 /home/ubuntu/django_cocker
+ sudo ufw allow 'Nginx Full'
+ sudo systemctl restart nginx
+ sudo systemctl restart gunicorn
 #------------------------------
-sudo systemctl restart nginx
-```
+
 
 ### Update Firewall Settings:
 Allow Nginx through the firewall:
@@ -191,3 +199,111 @@ sudo ufw allow 'Nginx Full'
 ---
 
 This guide provides a clear, step-by-step process for deploying a Django project to an AWS EC2 instance.
+
+
+
+
+
+# CI CD pipeline
+
+
+## ssh-keygen -t rsa -b 4096 -C "github-action-ec2"
+### cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+
+cat ~/.ssh/id_rsa
+
+Copy the entire content dont skip --- copy all  and go to your GitHub repository → Settings → Secrets → New repository secret
+
+Name: SSH_PRIVATE_KEY
+
+Paste the private key
+
+Add another secret: EC2_PUBLIC_IP with value 44.220.61.135
+
+
+
+
+
+## Github actions
+create this folder and paster all code in this
+# -----------------COpy all code donst skip any line--------------------------
+.github/workflows/deploy.yml
+
+-----------------------
+
+name: Deploy Django App to EC2
+
+# Trigger deployment on push to main branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the code from GitHub
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Step 2: Deploy to EC2
+    - name: Deploy to EC2
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+      run: |
+        # Save the private key
+        echo "$SSH_PRIVATE_KEY" > key.pem
+        chmod 600 key.pem
+
+        # SSH into EC2 and deploy
+        ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_PUBLIC_IP << 'EOF'
+          cd /home/ubuntu/django_cocker
+
+          # Reset any local changes and pull latest code
+          git reset --hard
+          git pull origin main
+
+          # Activate the EC2 virtual environment
+          source /home/ubuntu/django_cocker/venv/bin/activate
+
+          # Install any new dependencies
+          pip install -r requirements.txt
+
+          # Collect static files
+          python manage.py collectstatic --noinput
+
+          # Restart services
+          sudo systemctl restart gunicorn
+          sudo systemctl restart nginx
+        EOF
+---------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
